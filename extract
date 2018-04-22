@@ -1,3 +1,63 @@
 #! /bin/bash
 
+function extract(){
 
+    local out_directory
+    for arg in $@; do
+        if [[ $arg == '--create-dir' ]]; then
+            out_directory=$(sed -r 's/([^\.])\..*/\1/' <<< $1)
+            local i=1
+
+            while [[ -e $out_directory ]]; do
+                out_directory=${out_directory}_${i}
+                i=$((i+1))
+            done
+
+            mkdir -p $out_directory
+            shift
+            break
+        fi
+    done
+
+    if [ -f $1 ] ; then
+        case $1 in
+            *.tar.bz2)
+                tar xvjf $1 -C $out_directory
+                ;;
+            *.tar.gz)
+                tar xvzf $1 -C $out_directory
+                ;;
+            *.bz2)
+                tar xvjf $1 -C $out_directory
+                ;;
+            *.gz)
+                tar xvzf $1 -C $out_directory
+                ;;
+            *.tar)
+                tar xvf $1 -C $out_directory
+                ;;
+            *.tbz2)
+                tar xvjf $1 -C $out_directory
+                ;;
+            *.tgz)
+                tar xvzf $1 -C $out_directory
+                ;;
+            *.zip)
+                unzip $1 -d $out_directory
+                ;;
+            *.rar)
+                unrar x $1 $out_directory
+                ;;
+            *.7z)
+                7z x $1 -o${out_directory}
+                ;;
+            *)
+                echo "'$1' cannot be extracted via extract"
+                ;;
+        esac
+    else
+        echo "'$1' is not a valid file"
+    fi
+
+    echo "Archive $1 extracted to $out_directory"
+}
