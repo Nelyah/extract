@@ -2,73 +2,85 @@
 
 function extract(){
 
-    local out_directory
-    for arg in $@; do
-        if [[ $arg == '--create-dir' ]]; then
-            out_directory=$(sed -r 's/([^\.])\..*/\1/' <<< $1)
-            local i=1
+    local output
+    local output_dir
+    if [[ $1 == '--create-dir' ]]; then
+        shift
+        output=$(sed -r 's/([^\.])\..*/\1/' <<< $1)
+        output_dir=$output
 
-            while [[ -e $out_directory ]]; do
-                out_directory=${out_directory}_${i}
-                i=$((i+1))
-            done
+        local i=1
+        while [[ -e $output ]]; do
+            output=${output_dir}_${i}
+            i=$((i+1))
+        done
+        output_dir=$output
 
-            mkdir -p $out_directory
-            shift
-            break
-        fi
-    done
+        mkdir -p $output
+    fi
+
+    case $1 in
+        *.tar.bz2|*.tar.gz|*.bz2|*.gz|*.tar|*.tbz2|*.tgz)
+            [[ -n $output ]] && output="-C $output"
+            ;;
+        *.zip)
+            [[ -n $output ]] && output="-d $output"
+            ;;
+        *.7z)
+            [[ -n $output ]] && output="-o${output}"
+            ;;
+    esac
 
     case $1 in
         *.tar.bz2)
-            tar xvjf $1 -C $out_directory
+            tar xvjf $1 $output
             ;;
         *.tar.gz)
-            tar xvzf $1 -C $out_directory
+            tar xvzf $1 $output
             ;;
         *.bz2)
-            tar xvjf $1 -C $out_directory
+            tar xvjf $1 $output
             ;;
         *.gz)
-            tar xvzf $1 -C $out_directory
+            tar xvzf $1 $output
             ;;
         *.tar)
-            tar xvf $1 -C $out_directory
+            tar xvf $1 $output
             ;;
         *.tbz2)
-            tar xvjf $1 -C $out_directory
+            tar xvjf $1 $output
             ;;
         *.tgz)
-            tar xvzf $1 -C $out_directory
+            tar xvzf $1 $output
             ;;
         *.zip)
-            unzip $1 -d $out_directory
+            unzip $1 $output
             ;;
         *.rar)
-            unrar x $1 $out_directory
+            unrar x $1 $output
             ;;
         *.7z)
-            7z x $1 -o${out_directory}
+            7z x $1 $output
             ;;
         *)
             echo "'$1' cannot be extracted via extract"
             ;;
     esac
 
-    echo "Archive $1 extracted to $out_directory"
+    echo "Archive $1 extracted to $output_dir"
 }
 
 function check_nb_file(){
     local nb_file=-1
     case $1 in
         *.tar.bz2|*.tar.gz|*.bz2|*.gz|*.tar|*.tbz2|*.tgz)
-            nb_file=$(tar tf $1 | cut -d'/' | sort -u | wc -l)
+            nb_file=$(tar tf $1 | cut -d'/' -f1 | sort -u | wc -l)
             ;;
         *.zip)
-            nb_file=$(zipinfo -l1 $1 | cut -d'/' -f1|sort -u | wc -l)
+            nb_file=$(zipinfo -l1 $1 | cut -d'/' -f1 | sort -u | wc -l)
             ;;
         *.rar)
-            nb_file=$(rar lb $1 | cut -d'/' -f1|sort -u | wc -l)
+            nb_file=$(rar lb $1 | cut -d'/' -f1 | sort -u | wc -l)
             ;;
         *.7z)
             nb_file=$(7z l $1 |\
@@ -81,5 +93,13 @@ function check_nb_file(){
             ;;
     esac
 
-    return $nb_file
+    echo $nb_file
 }
+
+for archive in $@; do
+    if [[ $(check_nb_file $archive) > 1 ]]; then
+        extract --create-dir $archive
+    else
+        extract $archive
+    fi
+done
