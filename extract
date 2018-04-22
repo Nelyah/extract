@@ -19,45 +19,67 @@ function extract(){
         fi
     done
 
-    if [ -f $1 ] ; then
-        case $1 in
-            *.tar.bz2)
-                tar xvjf $1 -C $out_directory
-                ;;
-            *.tar.gz)
-                tar xvzf $1 -C $out_directory
-                ;;
-            *.bz2)
-                tar xvjf $1 -C $out_directory
-                ;;
-            *.gz)
-                tar xvzf $1 -C $out_directory
-                ;;
-            *.tar)
-                tar xvf $1 -C $out_directory
-                ;;
-            *.tbz2)
-                tar xvjf $1 -C $out_directory
-                ;;
-            *.tgz)
-                tar xvzf $1 -C $out_directory
-                ;;
-            *.zip)
-                unzip $1 -d $out_directory
-                ;;
-            *.rar)
-                unrar x $1 $out_directory
-                ;;
-            *.7z)
-                7z x $1 -o${out_directory}
-                ;;
-            *)
-                echo "'$1' cannot be extracted via extract"
-                ;;
-        esac
-    else
-        echo "'$1' is not a valid file"
-    fi
+    case $1 in
+        *.tar.bz2)
+            tar xvjf $1 -C $out_directory
+            ;;
+        *.tar.gz)
+            tar xvzf $1 -C $out_directory
+            ;;
+        *.bz2)
+            tar xvjf $1 -C $out_directory
+            ;;
+        *.gz)
+            tar xvzf $1 -C $out_directory
+            ;;
+        *.tar)
+            tar xvf $1 -C $out_directory
+            ;;
+        *.tbz2)
+            tar xvjf $1 -C $out_directory
+            ;;
+        *.tgz)
+            tar xvzf $1 -C $out_directory
+            ;;
+        *.zip)
+            unzip $1 -d $out_directory
+            ;;
+        *.rar)
+            unrar x $1 $out_directory
+            ;;
+        *.7z)
+            7z x $1 -o${out_directory}
+            ;;
+        *)
+            echo "'$1' cannot be extracted via extract"
+            ;;
+    esac
 
     echo "Archive $1 extracted to $out_directory"
+}
+
+function check_nb_file(){
+    local nb_file=-1
+    case $1 in
+        *.tar.bz2|*.tar.gz|*.bz2|*.gz|*.tar|*.tbz2|*.tgz)
+            nb_file=$(tar tf $1 | cut -d'/' | sort -u | wc -l)
+            ;;
+        *.zip)
+            nb_file=$(zipinfo -l1 $1 | cut -d'/' -f1|sort -u | wc -l)
+            ;;
+        *.rar)
+            nb_file=$(rar lb $1 | cut -d'/' -f1|sort -u | wc -l)
+            ;;
+        *.7z)
+            nb_file=$(7z l $1 |\
+                tail -n +21 | head -n -2 |\
+                awk '{print $(NF)}' |\
+                cut -d'/' -f1 | sort -u | wc -l)
+            ;;
+        *)
+            echo "'$1' cannot be extracted via extract"
+            ;;
+    esac
+
+    return $nb_file
 }
