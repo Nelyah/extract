@@ -20,50 +20,27 @@ function extract(){
     fi
 
     case $1 in
-        *.tar.bz2|*.tar.gz|*.bz2|*.gz|*.tar|*.tbz2|*.tgz)
-            [[ -n $output ]] && output="-C $output"
+        *.tar.bz2|*.tar.gz|*.bz2|*.tar|*.tbz2|*.tgz)
+            [[ -n $output ]] && \
+                tar xvf $1 -C $output || \
+                tar xvf $1
+            ;;
+        *.gz)
+            gunzip $1
             ;;
         *.zip)
-            [[ -n $output ]] && output="-d $output"
+            [[ -n $output ]] && \
+                unzip $1 -d $output ||
+                unzip $1
             ;;
         *.7z)
             [[ -n $output ]] && output="-o${output}"
             ;;
-    esac
-
-    case $1 in
-        *.tar.bz2)
-            tar xvjf $1 $output
-            ;;
-        *.tar.gz)
-            tar xvzf $1 $output
-            ;;
-        *.bz2)
-            tar xvjf $1 $output
-            ;;
-        *.gz)
-            tar xvzf $1 $output
-            ;;
-        *.tar)
-            tar xvf $1 $output
-            ;;
-        *.tbz2)
-            tar xvjf $1 $output
-            ;;
-        *.tgz)
-            tar xvzf $1 $output
-            ;;
-        *.zip)
-            unzip $1 $output
-            ;;
         *.rar)
             unrar x $1 $output
             ;;
-        *.7z)
-            7z x $1 $output
-            ;;
         *)
-            echo "'$1' cannot be extracted via extract"
+            echo "Cannot be extracted, unknown file type '$1'"
             ;;
     esac
 
@@ -73,8 +50,11 @@ function extract(){
 function check_nb_file(){
     local nb_file=-1
     case $1 in
-        *.tar.bz2|*.tar.gz|*.bz2|*.gz|*.tar|*.tbz2|*.tgz)
+        *.tar.bz2|*.tar.gz|*.bz2|*.tar|*.tbz2|*.tgz)
             nb_file=$(tar tf $1 | cut -d'/' -f1 | sort -u | wc -l)
+            ;;
+        *.gz)
+            nb_file=1
             ;;
         *.zip)
             nb_file=$(zipinfo -l1 $1 | cut -d'/' -f1 | sort -u | wc -l)
