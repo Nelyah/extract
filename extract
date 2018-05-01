@@ -7,6 +7,8 @@ function extract(){
     local output
     local output_dir
     local verbose
+    local create_dir
+    local arg
 
     # Check for arguments
     for arg in $@; do
@@ -114,7 +116,7 @@ function check_nb_file(){
 
 function usage ()
 {
-    echo "Usage :  $0 [options] filename [filename ...] [--]
+    echo "Usage :  $0 [options] filename [filenames ...] [--]
 
     Options:
     -h|help       Display this message
@@ -127,30 +129,35 @@ function usage ()
 #  Handle command line arguments
 #-----------------------------------------------------------------------
 
-while getopts ":hvo:p:" opt
-do
-  case $opt in
+args=
+while [[ $# -gt 0 ]]; do
+    unset OPTIND
+    unset OPTARG
 
-    h|help     )  usage; exit 0   ;;
+    while getopts ":hvo:p:" opt
+    do
+      case $opt in
 
-    v|verbose  )  verbose="--verbose"   ;;
+        h|help     )    usage; exit 0   ;;
 
-    o|output  )  output_dir=$OPTARG ;;
+        v|verbose  )    verbose="--verbose"
+                        ;;
 
-    p|process  )  nb_proc=$OPTARG ;;
+        o|output  )     output_dir=$OPTARG 
+                        ;;
 
-    * )  echo -e "\n  Option does not exist : $OPTARG\n"
-          usage; exit 1   ;;
+        p|process  )    nb_proc=$OPTARG 
+                        ;;
 
-  esac
+        * )  echo -e "\n  Option does not exist : $OPTARG\n"
+              usage; exit 1   ;;
+      esac
+    done
+    shift $(($OPTIND-1))
+    args="$args $1"
+    shift
 done
-shift $(($OPTIND-1))
 
-
-# Checking if there is a need to create a directory
-[[ $(check_nb_file $archive) > 1 ]] && {
-    create_dir="--create_dir"
-} || create_dir=
 
 # Check if we need to output to an other directory
 [[ -n $output_dir ]] && output_dir="--output_dir $output_dir"
@@ -158,10 +165,15 @@ shift $(($OPTIND-1))
 [[ -z $nb_proc ]] && nb_proc=1
 
 # Launching the program itself
-for archive in $@; do
-    extract $create_dir $output_dir $verbose $archive
+for archive in $args; do
+    # Checking if there is a need to create a directory
+    [[ $(check_nb_file $archive) > 1 ]] && {
+        create_dir="--create_dir"
+    } || create_dir=
 
-    while [[ $(jobs -l | wc -l) -ge $nb_proc ]]; do
+    extract $create_dir $output_dir $verbose $archive &
+
+    while [[ $(jobs -l | grep -v "Done" | wc -l) -ge $nb_proc ]]; do
         sleep 0.2
     done
 done
