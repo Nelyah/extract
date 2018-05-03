@@ -61,7 +61,7 @@ function extract(){
             gunzip $verbose $1
         ;;
         *.zip)
-            [[ -n $verbose ]] && verbose="-sv"
+            [[ -n $verbose ]] && verbose="-sv" || verbose="-q"
             [[ -n $output ]] && output="-d $output"
 
             unzip $verbose $1 $output
